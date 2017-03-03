@@ -1,0 +1,6 @@
+name: node_orders
+description: 'node_orders'
+type: module
+core: 8.x
+version: 1.1
+package: Synapse

@@ -1,0 +1,7 @@
+node_orders.page:
+  path: '/node_orders'
+  defaults:
+    _form: '\Drupal\node_orders\Controller\Group::collectionPrepare'
+    _title: 'Group'
+  requirements:
+    _permission: 'access content'
