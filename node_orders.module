@@ -8,21 +8,25 @@
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
 use Drupal\node_orders\Controller\Group;
+use Drupal\node_orders\Controller\Payment;
 use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Ajax\CssCommand;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Datetime\Entity\DateFormat;
 
 /**
  * Node_orders_entity_presave.
  */
 function node_orders_entity_presave(EntityInterface $node) {
   if (method_exists($node, 'getType') && $node->getType() == 'orders') {
-    $usluga = ' --- ';
-    if (is_object($node->field_orders_ref_activity->entity)) {
-      $usluga = $node->field_orders_ref_activity->entity->title->value;
+    if ($node->title == FALSE) {
+      $usluga = ' --- ';
+      if (is_object($node->field_orders_ref_activity->entity)) {
+        $usluga = $node->field_orders_ref_activity->entity->title->value;
+      }
+      $title = 'Заявка на ' . $usluga . ' от ' . format_date(time(), 'long');
+      $node->title->setValue($title);
     }
-    $title = 'Заявка на ' . $usluga . ' от ' . format_date(time(), 'long');
-    $node->title->setValue($title);
   }
 }
 
@@ -33,10 +37,18 @@ function node_orders_entity_view(array &$build, EntityInterface $entity, EntityV
   if (method_exists($entity, 'getType') && $entity->getType() == 'orders') {
     $group = Group::groupCounter($entity);
     $count = Group::ordersCalc($entity);
-    $build['group_view'] = [
-      '#markup' => 'Численность группы (все люди): ' . $group . ' чел.',
+    /*$build['group_view'] = [
+    '#markup' => 'Численность группы (все люди): ' . $group . ' чел.<br>',
     ];
-    // $build['hours'] = \Drupal::formBuilder()->getForm('Drupal\node_orders\Form\SimpleForm');
+    $build['orders_view'] = [
+    '#markup' => 'Сумма: ' . $count . ' руб.',
+    ];
+     */
+    $build['payments'] = Payment::view($entity);
+    if ($entity->field_orders_status->value == 'control') {
+      $build['hours'] = \Drupal::formBuilder()->getForm('Drupal\node_orders\Form\TeamHours', $entity);
+    }
+    $build['ordstatus'] = \Drupal::formBuilder()->getForm('Drupal\node_orders\Form\StatusChange', $entity);
     $entity->field_orders_group->setValue($group);
     $entity->field_orders_cost_raschet->setValue($count);
     $entity->save(TRUE);
@@ -64,13 +76,16 @@ function node_orders_ajax(array &$form, $form_state) {
  * Node_orders_form_alter.
  */
 function node_orders_form_alter(&$form, FormStateInterface $form_state, $form_id) {
-  if ($form_id == 'node_orders_form') {
+  if ($form_id == 'node_orders_form' || $form_id == 'node_orders_edit_form') {
     $form['field_orders_type']['widget']['#ajax'] = [
       'callback' => 'node_orders_ajax',
       'effect' => 'fade',
       'progress' => ['type' => 'throbber', 'message' => ""],
       'event' => 'change',
     ];
+    $format = DateFormat::load('html_time')->getPattern();
+    $form['field_orders_date']['widget']['0']['value']['#date_increment'] = ':15';
+    $form['field_orders_date']['widget']['0']['value']['#date_time_format'] = 'H:i';
   }
   if ($form_id == 'views_exposed_form' && $form['#id'] == 'views-exposed-form-orders-page-1') {
     $form['#info']['filter-field_orders_date_value']['label'] = "<b>Дата оказания услуги:</b> от";
