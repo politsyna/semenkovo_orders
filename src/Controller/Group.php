@@ -34,6 +34,7 @@ class Group extends ControllerBase {
     $collection = $node->field_orders_visitor;
     $data = self::collectionItems($collection);
     $node_usluga = $node->field_orders_ref_activity->entity;
+    $node_customer = $node->field_orders_customer->entity;
     if (is_object($node_usluga)) {
       $source = [
         'название услуги' => $node_usluga->title->value,
@@ -51,17 +52,31 @@ class Group extends ControllerBase {
         'базовая стоимость услуги' => $node_usluga->field_activity_cost_min->value,
       ];
     }
+    if (is_object($node_customer)) {
+      $array = [
+        'скидка' => $node_customer->field_customer_discount->value,
+      ];
+    }
     $output = '';
     $cost_adult = 0;
-    $cost_lgota = 0;
     $cost_school = 0;
     $cost_baby = 0;
+    $discount = 0;
+    $cost_lgota_student = 0;
+    $cost_lgota_old = 0;
+    $cost_lgota_museum = 0;
     foreach ($data as $key => $value) {
       if ($value['kategory'] == 'adult') {
         $cost_adult = $value['visitor'] * $source['цена на одного (общая категория)'];
       }
-      if ($value['kategory'] == 'student' || $value['kategory'] == 'old' || $value['kategory'] == 'museum') {
-        $cost_lgota = $value['visitor'] * $source['цена на одного (льготная категория)'];
+      if ($value['kategory'] == 'student') {
+        $cost_lgota_student = $value['visitor'] * $source['цена на одного (льготная категория)'];
+      }
+      if ($value['kategory'] == 'old') {
+        $cost_lgota_old = $value['visitor'] * $source['цена на одного (льготная категория)'];
+      }
+      if ($value['kategory'] == 'museum') {
+        $cost_lgota_museum = $value['visitor'] * $source['цена на одного (льготная категория)'];
       }
       if ($value['kategory'] == 'school') {
         $cost_school = $value['visitor'] * $source['цена на одного (школьники)'];
@@ -70,35 +85,65 @@ class Group extends ControllerBase {
         $cost_baby = $value['visitor'] * $source['цена на одного (дошкольники)'];
       }
     }
+    $cost_lgota = $cost_lgota_student + $cost_lgota_old + $cost_lgota_museum;
     if ($source['способ формирования цены'] == 'line') {
       $output .= "линейный способ\n";
       if ($source['общее количество людей'] < $source['минимальная численность группы']) {
         $output .= "численность меньше минимальной\n";
-        $output .= $source['общее количество людей'] . "<" . $source['минимальная численность группы'];
+        $output .= $source['общее количество людей'] . "<" . $source['минимальная численность группы'] . "\n";
         $summa = $source['минимальная численность группы'] * $source['цена на одного (общая категория)'];
       }
       else {
         $output .= "численность больше минимальной\n";
         $output .= $source['общее количество людей'] . ">" . $source['минимальная численность группы'] . "\n";
         $summa = $cost_adult + $cost_lgota + $cost_school + $cost_baby;
-        $output .= "сумма" . $summa . "\n";
+        $output .= "стоимость взрослых: " . $cost_adult . "\n";
+        $output .= "стоимость льготников: " . $cost_lgota . "\n";
+        $output .= "стоимость школьников: " . $cost_school . "\n";
+        $output .= "стоимость дошкольников: " . $cost_baby . "\n";
+        $output .= "сумма: " . $summa . "\n";
       }
       if ($source['применить повыш. коэфф-т'] == 'koefficient') {
         $summa = $summa * $source['повышающий коэффициент'];
+        $output .= "сумма с учетом коэф-та: " . $summa . "\n";
+      }
+      if (!empty($array['скидка'])) {
+        $output .= "скидка: " . $array['скидка'] . "\n";
+        $discount = $summa * $array['скидка'] / 100;
+        $output .= "сумма скидки: " . $discount . "\n";
+        $summa = $summa - $discount;
+        $output .= "итоговая сумма: " . $summa . "\n";
+      }
+      else {
+        $summa = $summa;
+        $output .= "итоговая сумма: " . $summa . "\n";
       }
     }
     elseif ($source['способ формирования цены'] == 'unline') {
       $output .= "нелинейный способ\n";
       if ($source['общее количество людей'] < $source['минимальная численность группы']) {
+        $output .= $source['общее количество людей'] . "<" . $source['минимальная численность группы'] . "\n";
         $summa = $source['базовая стоимость услуги'];
       }
       else {
+        $output .= $source['общее количество людей'] . ">" . $source['минимальная численность группы'] . "\n";
         $people = $source['общее количество людей'] - $source['минимальная численность группы'];
+        $output .= "количество людей сверх минимума: " . $people . "\n";
         $cost = $people * $source['цена на одного (общая категория)'];
+        $output .= "сумма за людей сверх минимума: " . $cost . "\n";
         $summa = $source['базовая стоимость услуги'] + $cost;
+        $output .= "базовая стоимость услуги: " . $source['базовая стоимость услуги'] . "\n";
+        $output .= "итоговая сумма: " . $summa . "\n";
       }
       if ($source['применить повыш. коэфф-т'] == 'koefficient') {
         $summa = $summa * $source['повышающий коэффициент'];
+      }
+      if (!empty($array['скидка'])) {
+        $output .= "скидка: " . $array['скидка'] . "\n";
+        $discount = $summa * $array['скидка'] / 100;
+        $output .= "сумма скидки: " . $discount . "\n";
+        $summa = $summa - $discount;
+        $output .= "итоговая сумма: " . $summa . "\n";
       }
     }
     else {
@@ -106,8 +151,19 @@ class Group extends ControllerBase {
       if ($source['применить повыш. коэфф-т'] == 'koefficient') {
         $summa = $summa * $source['повышающий коэффициент'];
       }
+      if (!empty($array['скидка'])) {
+        $output .= "скидка: " . $array['скидка'] . "\n";
+        $discount = $summa * $array['скидка'] / 100;
+        $output .= "сумма скидки: " . $discount . "\n";
+        $summa = $summa - $discount;
+        $output .= "итоговая сумма: " . $summa . "\n";
+      }
+      else {
+        $summa = $summa;
+        $output .= "итоговая сумма: " . $summa . "\n";
+      }
     }
-    //dsm($output);
+    dsm($output);
     return $summa;
   }
 
