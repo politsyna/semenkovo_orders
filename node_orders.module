@@ -19,12 +19,13 @@ use Drupal\Core\Datetime\Entity\DateFormat;
  */
 function node_orders_entity_presave(EntityInterface $node) {
   if (method_exists($node, 'getType') && $node->getType() == 'orders') {
-    if ($node->title == FALSE) {
+    if (!$node->title->value || TRUE) {
       $usluga = ' --- ';
       if (is_object($node->field_orders_ref_activity->entity)) {
         $usluga = $node->field_orders_ref_activity->entity->title->value;
       }
-      $title = 'Заявка на ' . $usluga . ' от ' . format_date(time(), 'long');
+      $time = strtotime($node->field_orders_date->value);
+      $title = 'Заявка: ' . $usluga . ' / ' . format_date($time, 'long');
       $node->title->setValue($title);
     }
   }
@@ -64,10 +65,10 @@ function node_orders_ajax(array &$form, $form_state) {
   $hide = ['display' => 'none'];
   $orders_type = $form_state->getValue('field_orders_type');
   if ($orders_type[0]['value'] == "turist") {
-    $response->addCommand(new CssCommand('.form-item-field-orders-customer', $show));
+    $response->addCommand(new CssCommand('.form-item-field-orders-customer-0-target-id', $show));
   }
   else {
-    $response->addCommand(new CssCommand('.form-item-field-orders-customer', $hide));
+    $response->addCommand(new CssCommand('.form-item-field-orders-customer-0-target-id', $hide));
   }
   return $response;
 }

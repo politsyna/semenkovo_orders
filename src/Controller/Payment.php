@@ -31,12 +31,15 @@ class Payment extends ControllerBase {
       $node_payment = Node::load($value);
       $oplata = $node_payment->title->value;
       $summa = (int) $node_payment->field_payment_summa->value;
-      $oplata_summa .= $oplata . " --- " . $summa . " руб.<br />";
+      $oplata_summa .= $oplata . " --- " . number_format($summa, 0, ",", " ") . " руб.<br />";
       $itog_summa = $itog_summa + $summa;
     }
+    $fakt_summa = $node_order->field_orders_cost->value;
+    $ostat_summa = $fakt_summa - $itog_summa;
     $output = [
       'paym' => ['#markup' => 'Оплаты:' . "<br />" . $oplata_summa],
-      'summa_oplat' => ['#markup' => 'Сумма всех оплат: ' . $itog_summa . " руб." . "<br />"],
+      'summa_oplat' => ['#markup' => 'Сумма всех оплат: ' . number_format($itog_summa, 0, ",", " ") . " руб." . "<br />"],
+      'summa_ostatok' => ['#markup' => 'Осталось оплатить: ' . number_format($ostat_summa, 0, ",", " ") . " руб." . "<br />"],
     ];
     $node_order->field_orders_oplacheno->setValue($itog_summa);
     return $output;

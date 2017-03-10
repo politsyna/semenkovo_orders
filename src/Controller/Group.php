@@ -163,7 +163,7 @@ class Group extends ControllerBase {
         $output .= "итоговая сумма: " . $summa . "\n";
       }
     }
-    dsm($output);
+    // dsm($output);
     return $summa;
   }
 
