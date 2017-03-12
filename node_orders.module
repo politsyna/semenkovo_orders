@@ -50,6 +50,7 @@ function node_orders_entity_view(array &$build, EntityInterface $entity, EntityV
       $build['hours'] = \Drupal::formBuilder()->getForm('Drupal\node_orders\Form\TeamHours', $entity);
     }
     $build['ordstatus'] = \Drupal::formBuilder()->getForm('Drupal\node_orders\Form\StatusChange', $entity);
+    $build['sendemail'] = \Drupal::formBuilder()->getForm('Drupal\node_orders\Form\SendEmail', $entity);
     $entity->field_orders_group->setValue($group);
     $entity->field_orders_cost_raschet->setValue($count);
     $entity->save(TRUE);

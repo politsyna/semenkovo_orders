@@ -38,9 +38,22 @@ class Payment extends ControllerBase {
     $ostat_summa = $fakt_summa - $itog_summa;
     $output = [
       'paym' => ['#markup' => 'Оплаты:' . "<br />" . $oplata_summa],
-      'summa_oplat' => ['#markup' => 'Сумма всех оплат: ' . number_format($itog_summa, 0, ",", " ") . " руб." . "<br />"],
-      'summa_ostatok' => ['#markup' => 'Осталось оплатить: ' . number_format($ostat_summa, 0, ",", " ") . " руб." . "<br />"],
+      'summa_oplat' => [
+        '#markup' => 'Сумма всех оплат: '
+        . number_format($itog_summa, 0, ",", " ") . " руб. <br />",
+      ],
+      'summa_ostatok' => [
+        '#markup' => 'Осталось оплатить: '
+        . number_format($ostat_summa, 0, ",", " ") . " руб. <br />",
+      ],
     ];
+    $status = $node_order->field_orders_status->value;
+    if ($status == 'active' || $status == 'control' || $status == 'done') {
+      $output['paybutton'] = [
+        '#markup' => '<a href="/node/add/payment?orders=' . $node_order->id()
+        . '&destination=/node/' . $node_order->id() . '" class="btn btn-primary">Добавить оплату</a>',
+      ];
+    }
     $node_order->field_orders_oplacheno->setValue($itog_summa);
     return $output;
   }
