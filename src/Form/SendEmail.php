@@ -33,6 +33,9 @@ class SendEmail extends FormBase {
       if ($value['kategory'] == 'adult') {
         $kategoria[] = "взрослые";
       }
+      if ($value['kategory'] == 'inostr') {
+        $kategoria[] = "иностранцы";
+      }
       if ($value['kategory'] == 'student') {
         $kategoria[] = "студенты";
       }
@@ -45,8 +48,14 @@ class SendEmail extends FormBase {
       if ($value['kategory'] == 'old') {
         $kategoria[] = "пенсионеры";
       }
+      if ($value['kategory'] == 'military') {
+        $kategoria[] = "военнослужащие";
+      }
       if ($value['kategory'] == 'museum') {
         $kategoria[] = "музейные работники";
+      }
+      if ($value['kategory'] == 'guest') {
+        $kategoria[] = "гости";
       }
     }
     $kategories = implode(", ", $kategoria);
@@ -72,7 +81,7 @@ class SendEmail extends FormBase {
     $subject = "Заявка на посещение Музея \"Семенково\"";
     $message = "Здравствуйте!
 
-Ваша заявка №$num на музейную услугу $order на $date создана.
+Ваша заявка №$num на музейную услугу \"$order\" на $date создана.
 Численность группы - $people человек. Категория посетителей: $kategories.
 Фактическая стоимость услуги - " . number_format($fakt_cost, 0, ",", " ") . " руб.
 
@@ -82,10 +91,16 @@ class SendEmail extends FormBase {
 экскурсионный отдел Музея \"Семёнково\".
 
 По всем возникающим вопросам звоните по телефону: (8172) 75-80-53.";
-    $headers = 'From: zakaz@semenkovo.ru' . "\r\n";
+    $headers = "Content-type: text/plain; charset=UTF-8\r\n";
+    $headers .= 'From: zakaz@semenkovo.ru' . "\r\n";
     $mail = mail($to, $subject, $message, $headers);
     $response = new AjaxResponse();
-    $response->addCommand(new HtmlCommand("#button-send-email-form .otvet", $otvet));
+    if ($mail) {
+      $response->addCommand(new HtmlCommand("#button-send-email-form .otvet", $otvet));
+    }
+    else {
+      $response->addCommand(new HtmlCommand("#button-send-email-form .otvet", "E-mail отправить не удалось."));
+    }
     return $response;
   }
 
