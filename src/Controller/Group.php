@@ -59,7 +59,6 @@ class Group extends ControllerBase {
     }
     $output = '';
     $cost_adult = 0;
-    $cost_inostr = 0;
     $cost_school = 0;
     $cost_baby = 0;
     $discount = 0;
@@ -67,13 +66,11 @@ class Group extends ControllerBase {
     $cost_lgota_old = 0;
     $cost_lgota_military = 0;
     $cost_lgota_museum = 0;
+    $cost_lgotniki = 0;
     $cost_guest = 0;
     foreach ($data as $key => $value) {
       if ($value['kategory'] == 'adult') {
         $cost_adult = $value['visitor'] * $source['цена на одного (общая категория)'];
-      }
-      if ($value['kategory'] == 'inostr') {
-        $cost_inostr = $value['visitor'] * $source['цена на одного (общая категория)'];
       }
       if ($value['kategory'] == 'student') {
         $cost_lgota_student = $value['visitor'] * $source['цена на одного (льготная категория)'];
@@ -93,12 +90,14 @@ class Group extends ControllerBase {
       if ($value['kategory'] == 'baby') {
         $cost_baby = $value['visitor'] * $source['цена на одного (дошкольники)'];
       }
+      if ($value['kategory'] == 'lgotniki') {
+        $cost_lgotniki = $value['visitor'] * 0;
+      }
       if ($value['kategory'] == 'guest') {
         $cost_guest = $value['visitor'] * 0;
       }
     }
     $cost_lgota = $cost_lgota_student + $cost_lgota_old + $cost_lgota_military + $cost_lgota_museum;
-    $cost_obshaya = $cost_adult + $cost_inostr;
     if ($source['способ формирования цены'] == 'line') {
       $output .= "линейный способ\n";
       if ($source['общее количество людей'] < $source['минимальная численность группы']) {
@@ -109,8 +108,8 @@ class Group extends ControllerBase {
       else {
         $output .= "численность больше минимальной\n";
         $output .= $source['общее количество людей'] . ">" . $source['минимальная численность группы'] . "\n";
-        $summa = $cost_obshaya + $cost_lgota + $cost_school + $cost_baby + $cost_guest;
-        $output .= "стоимость взрослых: " . $cost_obshaya . "\n";
+        $summa = $cost_adult + $cost_lgota + $cost_school + $cost_baby + $cost_guest + $cost_lgotniki;
+        $output .= "стоимость взрослых: " . $cost_adult . "\n";
         $output .= "стоимость льготников: " . $cost_lgota . "\n";
         $output .= "стоимость школьников: " . $cost_school . "\n";
         $output .= "стоимость дошкольников: " . $cost_baby . "\n";

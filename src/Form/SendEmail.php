@@ -33,9 +33,6 @@ class SendEmail extends FormBase {
       if ($value['kategory'] == 'adult') {
         $kategoria[] = "взрослые";
       }
-      if ($value['kategory'] == 'inostr') {
-        $kategoria[] = "иностранцы";
-      }
       if ($value['kategory'] == 'student') {
         $kategoria[] = "студенты";
       }
@@ -53,6 +50,9 @@ class SendEmail extends FormBase {
       }
       if ($value['kategory'] == 'museum') {
         $kategoria[] = "музейные работники";
+      }
+      if ($value['kategory'] == 'lgotniki') {
+        $kategoria[] = "льготники";
       }
       if ($value['kategory'] == 'guest') {
         $kategoria[] = "гости";
