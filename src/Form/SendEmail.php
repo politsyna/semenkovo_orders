@@ -83,7 +83,7 @@ class SendEmail extends FormBase {
 
 Ваша заявка №$num на музейную услугу \"$order\" на $date создана.
 Численность группы - $people человек. Категория посетителей: $kategories.
-Фактическая стоимость услуги - " . number_format($fakt_cost, 0, ",", " ") . " руб.
+Стоимость услуги - " . number_format($fakt_cost, 0, ",", " ") . " руб.
 
 
 -----

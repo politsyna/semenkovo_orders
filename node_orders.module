@@ -38,21 +38,25 @@ function node_orders_entity_view(array &$build, EntityInterface $entity, EntityV
   if (method_exists($entity, 'getType') && $entity->getType() == 'orders') {
     $group = Group::groupCounter($entity);
     $count = Group::ordersCalc($entity);
+    $entity->field_orders_group->setValue($group);
+    $entity->field_orders_cost_raschet->setValue($count);
     /*$build['group_view'] = [
     '#markup' => 'Численность группы (все люди): ' . $group . ' чел.<br>',
-    ];
+    ]; */
     $build['orders_view'] = [
-    '#markup' => 'Сумма: ' . $count . ' руб.',
+      '#markup' => '<span class="cost">Расчетная стоимость услуги: </span>' . number_format($count, 0, ",", " ") . ' руб.',
     ];
-     */
     $build['payments'] = Payment::view($entity);
-    if ($entity->field_orders_status->value == 'control') {
+    $status = $entity->field_orders_status->value;
+    if ($status == 'zayvka' || $status == 'control' || $status == 'active') {
+      $build['cost'] = \Drupal::formBuilder()->getForm('Drupal\node_orders\Form\CalcCost', $entity);
+    }
+    if ($status == 'control') {
       $build['hours'] = \Drupal::formBuilder()->getForm('Drupal\node_orders\Form\TeamHours', $entity);
     }
     $build['ordstatus'] = \Drupal::formBuilder()->getForm('Drupal\node_orders\Form\StatusChange', $entity);
     $build['sendemail'] = \Drupal::formBuilder()->getForm('Drupal\node_orders\Form\SendEmail', $entity);
-    $entity->field_orders_group->setValue($group);
-    $entity->field_orders_cost_raschet->setValue($count);
+
     $entity->save(TRUE);
   }
 }
