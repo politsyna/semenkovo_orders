@@ -7,6 +7,7 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Ajax\HtmlCommand;
 use Drupal\Core\Ajax\RedirectCommand;
+use Drupal\user\Entity\User;
 
 /**
  * SimpleForm.
@@ -18,12 +19,19 @@ class StatusChange extends FormBase {
    */
   public function ajaxStatusChange(array &$form, &$form_state) {
     $response = new AjaxResponse();
-    $node = $form_state->node_orders;
-    $status = $form_state->getValue('select');
-    $node->field_orders_status->setValue($status);
-    $node->save();
-    $response->addCommand(new HtmlCommand("#status-change", "Статус заявки успешно изменен"));
-    $response->addCommand(new RedirectCommand('/node/' . $node->id()));
+    $uid = \Drupal::currentUser()->id();
+    $user = User::load($uid);
+    if ($user->hasPermission('orders-form')) {
+      $node = $form_state->node_orders;
+      $status = $form_state->getValue('select');
+      $node->field_orders_status->setValue($status);
+      $node->save();
+      $response->addCommand(new HtmlCommand("#status-change", "Статус заявки успешно изменен"));
+      $response->addCommand(new RedirectCommand('/node/' . $node->id()));
+    }
+    else {
+      $response->addCommand(new HtmlCommand("#status-change", "Доступ запрещен"));
+    }
     return $response;
   }
 

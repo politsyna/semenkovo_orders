@@ -7,6 +7,7 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Ajax\HtmlCommand;
 use Drupal\node\Entity\Node;
+use Drupal\user\Entity\User;
 
 /**
  * SimpleForm.
@@ -17,31 +18,38 @@ class TeamHours extends FormBase {
    * F ajaxModeDev.
    */
   public function ajaxTeamHours(array &$form, &$form_state) {
-    $nid = $form_state->getValue('orders');
-    $node = Node::load($nid);
-    $get_values = $form_state->getValues();
-    $num = $node->id();
-    $people = $node->field_orders_team;
-    foreach ($people as $key => $value) {
-      $node_people = $value->entity;
-      $nid = $node_people->id();
-      $form_key = 'team-' . $nid;
-      $current_value = str_replace(',', '.', $get_values[$form_key]);
-      $source = [
-        'type' => 'exhour',
-        'title' => 'title',
-        'field_exhour_ref_orders' => $num,
-        'field_exhour_team' => $nid,
-        'field_exhour_hours' => $current_value,
-        'uid' => \Drupal::currentUser()->id(),
-      ];
-      $node_chas = Node::create($source);
-      $node_chas->save();
-    }
     $response = new AjaxResponse();
-    $response->addCommand(new HtmlCommand("#button-team-hours-form .form-actions", "Часы работникам созданы"));
-    $node->field_orders_status->setValue('done');
-    $node->save();
+    $uid = \Drupal::currentUser()->id();
+    $user = User::load($uid);
+    if ($user->hasPermission('orders-form')) {
+      $nid = $form_state->getValue('orders');
+      $node = Node::load($nid);
+      $get_values = $form_state->getValues();
+      $num = $node->id();
+      $people = $node->field_orders_team;
+      foreach ($people as $key => $value) {
+        $node_people = $value->entity;
+        $nid = $node_people->id();
+        $form_key = 'team-' . $nid;
+        $current_value = str_replace(',', '.', $get_values[$form_key]);
+        $source = [
+          'type' => 'exhour',
+          'title' => 'title',
+          'field_exhour_ref_orders' => $num,
+          'field_exhour_team' => $nid,
+          'field_exhour_hours' => $current_value,
+          'uid' => \Drupal::currentUser()->id(),
+        ];
+        $node_chas = Node::create($source);
+        $node_chas->save();
+      }
+      $response->addCommand(new HtmlCommand("#button-team-hours-form .form-actions", "Часы работникам созданы"));
+      $node->field_orders_status->setValue('done');
+      $node->save();
+    }
+    else {
+      $response->addCommand(new HtmlCommand("#button-team-hours-form .form-actions", "Доступ запрещен"));
+    }
     return $response;
   }
 

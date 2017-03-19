@@ -11,8 +11,10 @@ use Drupal\node_orders\Controller\Group;
 use Drupal\node_orders\Controller\Payment;
 use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Ajax\CssCommand;
+use Drupal\Core\Ajax\HtmlCommand;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Datetime\Entity\DateFormat;
+use Drupal\node\Entity\Node;
 
 /**
  * Node_orders_entity_presave.
@@ -37,12 +39,12 @@ function node_orders_entity_presave(EntityInterface $node) {
 function node_orders_entity_view(array &$build, EntityInterface $entity, EntityViewDisplayInterface $display, $view_mode) {
   if (method_exists($entity, 'getType') && $entity->getType() == 'orders') {
     $group = Group::groupCounter($entity);
-    $count = Group::ordersCalc($entity);
     $entity->field_orders_group->setValue($group);
+    $count = Group::ordersCalc($entity);
     $entity->field_orders_cost_raschet->setValue($count);
-    /*$build['group_view'] = [
-    '#markup' => 'Численность группы (все люди): ' . $group . ' чел.<br>',
-    ]; */
+    $build['group_view'] = [
+      '#markup' => '<span class="cost">Численность группы (все люди): </span>' . $group . ' чел.<br>',
+    ];
     $build['orders_view'] = [
       '#markup' => '<span class="cost">Расчетная стоимость услуги: </span>' . number_format($count, 0, ",", " ") . ' руб.',
     ];
@@ -69,12 +71,37 @@ function node_orders_ajax(array &$form, $form_state) {
   $show = ['display' => 'block'];
   $hide = ['display' => 'none'];
   $orders_type = $form_state->getValue('field_orders_type');
+  $orders_date = $form_state->getValue('field_orders_date');
+  $date = $orders_date[0]['value']['date'];
+  $start = strtotime($date);
+  $end = strtotime($date) + 24 * 3600;
+  $otvet = 'Заявки на: ' . format_date($start, 'custom', 'd-m-Y') . ":";
+  $query = \Drupal::entityQuery('node');
+  $query->condition('status', 1);
+  $query->condition('type', 'orders');
+  $query->condition('field_orders_date', format_date($start, 'custom', 'Y-m-d'), '>');
+  $query->condition('field_orders_date', format_date($end, 'custom', 'Y-m-d'), '<');
+  $query->range(0, 10);
+  $entity_ids = $query->execute();
+  $orders = Node::loadMultiple($entity_ids);
+  foreach ($orders as $key => $node) {
+    $otvet .= "<br><a href='/node/$key'>{$node->title->value}</a>";
+  }
+  $response->addCommand(new HtmlCommand("#check-date", $otvet));
+
   if ($orders_type[0]['value'] == "turist") {
     $response->addCommand(new CssCommand('.form-item-field-orders-customer-0-target-id', $show));
   }
   else {
     $response->addCommand(new CssCommand('.form-item-field-orders-customer-0-target-id', $hide));
   }
+  if ($orders_type[0]['value'] == "fizik" || $orders_type[0]['value'] == "jurik") {
+    $response->addCommand(new CssCommand('.form-item-field-orders-name-0-value', $show));
+  }
+  else {
+    $response->addCommand(new CssCommand('.form-item-field-orders-name-0-value', $hide));
+  }
+
   return $response;
 }
 
@@ -89,7 +116,9 @@ function node_orders_form_alter(&$form, FormStateInterface $form_state, $form_id
       'progress' => ['type' => 'throbber', 'message' => ""],
       'event' => 'change',
     ];
+
     $format = DateFormat::load('html_time')->getPattern();
+    $form['field_orders_date']["#suffix"] = '<div id="check-date"></div>';
     $form['field_orders_date']['widget']['0']['value']['#date_increment'] = ':15';
     $form['field_orders_date']['widget']['0']['value']['#date_time_format'] = 'H:i';
   }

@@ -82,7 +82,7 @@ class Group extends ControllerBase {
         $cost_lgota_military = $value['visitor'] * $source['цена на одного (льготная категория)'];
       }
       if ($value['kategory'] == 'museum') {
-        $cost_lgota_museum = $value['visitor'] * $source['цена на одного (льготная категория)'];
+        $cost_lgota_museum = $value['visitor'] * 0;
       }
       if ($value['kategory'] == 'school') {
         $cost_school = $value['visitor'] * $source['цена на одного (школьники)'];
