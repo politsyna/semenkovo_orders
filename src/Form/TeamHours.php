@@ -32,16 +32,38 @@ class TeamHours extends FormBase {
         $nid = $node_people->id();
         $form_key = 'team-' . $nid;
         $current_value = str_replace(',', '.', $get_values[$form_key]);
-        $source = [
-          'type' => 'exhour',
-          'title' => 'title',
-          'field_exhour_ref_orders' => $num,
-          'field_exhour_team' => $nid,
-          'field_exhour_hours' => $current_value,
-          'uid' => \Drupal::currentUser()->id(),
-        ];
-        $node_chas = Node::create($source);
-        $node_chas->save();
+        $query = \Drupal::entityQuery('node');
+        $query->condition('status', 1);
+        $query->condition('type', 'exhour');
+        $query->condition('field_exhour_ref_orders', $num);
+        $query->condition('field_exhour_team', $nid);
+        $entity_ids = $query->execute();
+        if (empty($entity_ids)) {
+          $source = [
+            'type' => 'exhour',
+            'title' => 'title',
+            'field_exhour_ref_orders' => $num,
+            'field_exhour_team' => $nid,
+            'field_exhour_hours' => $current_value,
+            'uid' => \Drupal::currentUser()->id(),
+          ];
+          $node_chas = Node::create($source);
+          $node_chas->save();
+        }
+        else {
+          $hours = Node::loadMultiple($entity_ids);
+          $k = 0;
+          foreach ($hours as $key => $node_chas) {
+            if ($k == 0) {
+              $node_chas->field_exhour_hours->setValue($current_value);
+            }
+            else {
+              $node_chas->setPublished(FALSE);
+            }
+            $node_chas->save();
+            $k++;
+          }
+        }
       }
       $response->addCommand(new HtmlCommand("#button-team-hours-form .form-actions", "Часы работникам созданы"));
       $node->field_orders_status->setValue('done');
@@ -80,7 +102,7 @@ class TeamHours extends FormBase {
     ];
     $form['actions']['submit'] = [
       '#type' => 'submit',
-      '#value' => 'Создать часы сотрудникам',
+      '#value' => 'Создать часы работникам',
       '#attributes' => ['class' => ['btn', 'btn-xs', 'btn-danger']],
       '#ajax' => [
         'callback' => '::ajaxTeamHours',
