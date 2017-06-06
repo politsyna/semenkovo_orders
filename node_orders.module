@@ -27,7 +27,7 @@ function node_orders_entity_presave(EntityInterface $node) {
         $usluga = $node->field_orders_ref_activity->entity->title->value;
       }
       $time = strtotime($node->field_orders_date->value);
-      $title = 'Заявка: ' . $usluga . ' / ' . format_date($time, 'long');
+      $title = $usluga . ' / ' . format_date($time, 'long');
       $node->title->setValue($title);
     }
   }
@@ -38,28 +38,31 @@ function node_orders_entity_presave(EntityInterface $node) {
  */
 function node_orders_entity_view(array &$build, EntityInterface $entity, EntityViewDisplayInterface $display, $view_mode) {
   if (method_exists($entity, 'getType') && $entity->getType() == 'orders') {
-    $group = Group::groupCounter($entity);
-    $entity->field_orders_group->setValue($group);
-    $count = Group::ordersCalc($entity);
-    $entity->field_orders_cost_raschet->setValue($count);
-    $build['group_view'] = [
-      '#markup' => '<span class="cost">Численность группы (все люди): </span>' . $group . ' чел.<br>',
-    ];
-    $build['orders_view'] = [
-      '#markup' => '<span class="cost">Расчетная стоимость услуги: </span>' . number_format($count, 0, ",", " ") . ' руб.',
-    ];
-    $build['payments'] = Payment::view($entity);
-    $status = $entity->field_orders_status->value;
-    if ($status == 'zayvka' || $status == 'control' || $status == 'active') {
-      $build['cost'] = \Drupal::formBuilder()->getForm('Drupal\node_orders\Form\CalcCost', $entity);
-    }
-    if ($status == 'control') {
-      $build['hours'] = \Drupal::formBuilder()->getForm('Drupal\node_orders\Form\TeamHours', $entity);
-    }
-    $build['ordstatus'] = \Drupal::formBuilder()->getForm('Drupal\node_orders\Form\StatusChange', $entity);
-    $build['sendemail'] = \Drupal::formBuilder()->getForm('Drupal\node_orders\Form\SendEmail', $entity);
+    if ($view_mode != 'teaser') {
+      $group = Group::groupCounter($entity);
+      $entity->field_orders_group->setValue($group);
+      $count = Group::ordersCalc($entity);
+      $entity->field_orders_cost_raschet->setValue($count);
+      $build['group_view'] = [
+        '#markup' => '<span class="cost">Численность группы (все люди): </span>' . $group . ' чел.<br>',
+      ];
+      $build['orders_view'] = [
+        '#markup' => '<span class="cost">Расчетная стоимость услуги: </span>' . number_format($count, 0, ",", " ") . ' руб.',
+      ];
+      $build['payments'] = Payment::view($entity);
+      $status = $entity->field_orders_status->value;
+      if ($status == 'zayvka' || $status == 'control' || $status == 'active') {
+        $build['cost'] = \Drupal::formBuilder()->getForm('Drupal\node_orders\Form\CalcCost', $entity);
+      }
+      if ($status == 'control') {
+        $build['hours'] = \Drupal::formBuilder()->getForm('Drupal\node_orders\Form\TeamHours', $entity);
+      }
+      $build['ordstatus'] = \Drupal::formBuilder()->getForm('Drupal\node_orders\Form\StatusChange', $entity);
+      $build['sendemail'] = \Drupal::formBuilder()->getForm('Drupal\node_orders\Form\SendEmail', $entity);
 
-    $entity->save(TRUE);
+      $entity->save(TRUE);
+    }
+
   }
 }
 
@@ -81,7 +84,9 @@ function node_orders_ajax(array &$form, $form_state) {
   $query->condition('type', 'orders');
   $query->condition('field_orders_date', format_date($start, 'custom', 'Y-m-d'), '>');
   $query->condition('field_orders_date', format_date($end, 'custom', 'Y-m-d'), '<');
-  $query->range(0, 10);
+  $query->condition('field_orders_status', "cancel", '<>');
+  $query->sort('field_orders_date');
+  $query->range(0, 30);
   $entity_ids = $query->execute();
   $orders = Node::loadMultiple($entity_ids);
   foreach ($orders as $key => $node) {
