@@ -95,7 +95,7 @@ class SendEmail extends FormBase {
   С уважением,
   экскурсионный отдел Музея \"Семёнково\".
 
-  По всем возникающим вопросам звоните по телефону: (8172) 75-80-53.";
+  По всем возникающим вопросам звоните по телефону: (8172) 21-01-90.";
       $headers = "Content-type: text/plain; charset=UTF-8\r\n";
       $headers .= 'From: zakaz@semenkovo.ru' . "\r\n";
       $mail = mail($to, $subject, $message, $headers);
