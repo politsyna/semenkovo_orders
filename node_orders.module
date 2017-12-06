@@ -9,6 +9,7 @@ use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
 use Drupal\node_orders\Controller\Group;
 use Drupal\node_orders\Controller\Payment;
+use Drupal\node_orders\Controller\CalcTeam;
 use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Ajax\CssCommand;
 use Drupal\Core\Ajax\HtmlCommand;
@@ -38,7 +39,10 @@ function node_orders_entity_presave(EntityInterface $node) {
  */
 function node_orders_entity_view(array &$build, EntityInterface $entity, EntityViewDisplayInterface $display, $view_mode) {
   if (method_exists($entity, 'getType') && $entity->getType() == 'orders') {
-    if ($view_mode != 'teaser') {
+    if ($view_mode == 'teaser') {
+      $build['team'] = CalcTeam::view($entity);
+    }
+    if ($view_mode == 'full') {
       $group = Group::groupCounter($entity);
       $entity->field_orders_group->setValue($group);
       $count = Group::ordersCalc($entity);
